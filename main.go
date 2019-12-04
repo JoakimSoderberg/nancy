@@ -77,8 +77,7 @@ func doStdInAndParse() {
 		scanner := bufio.NewScanner(os.Stdin)
 		mod.ProjectList, _ = parse.GoList(scanner)
 		var purls = mod.ExtractPurlsFromManifest()
-		var packageCount = len(purls)
-		checkOSSIndex(purls, packageCount)
+		checkOSSIndex(purls)
 	}
 }
 
@@ -104,28 +103,25 @@ func doCheckExistenceAndParse() {
 			audit.LogInvalidSemVerWarning(config.NoColor, config.Quiet, invalidPurls)
 		}
 
-		var packageCount = len(purls)
-		checkOSSIndex(purls, packageCount)
+		checkOSSIndex(purls)
 	case strings.Contains(config.Path, "go.sum"):
 		mod := packages.Mod{}
 		mod.GoSumPath = config.Path
 		if mod.CheckExistenceOfManifest() {
 			mod.ProjectList, _ = parse.GoSum(config.Path)
 			var purls = mod.ExtractPurlsFromManifest()
-			var packageCount = len(purls)
-
-			checkOSSIndex(purls, packageCount)
+			checkOSSIndex(purls)
 		}
 	default:
 		os.Exit(3)
 	}
 }
 
-func checkOSSIndex(purls []string, packageCount int) {
+func checkOSSIndex(purls []string) {
 	coordinates, err := ossindex.AuditPackages(purls)
 	customerrors.Check(err, "Error auditing packages")
 
-	if count := audit.LogResults(config.NoColor, config.Quiet, packageCount, coordinates, config.CveList.Cves); count > 0 {
+	if count := audit.LogResults(config.NoColor, config.Quiet, len(purls), coordinates, config.CveList.Cves); count > 0 {
 		os.Exit(count)
 	}
 }

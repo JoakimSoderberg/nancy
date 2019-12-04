@@ -27,9 +27,9 @@ import (
 	"github.com/sonatype-nexus-community/nancy/configuration"
 	"github.com/sonatype-nexus-community/nancy/customerrors"
 	"github.com/sonatype-nexus-community/nancy/ossindex"
+	"github.com/sonatype-nexus-community/nancy/output"
 	"github.com/sonatype-nexus-community/nancy/packages"
 	"github.com/sonatype-nexus-community/nancy/parse"
-	"github.com/sonatype-nexus-community/nancy/types"
 )
 
 var config configuration.Configuration
@@ -78,7 +78,7 @@ func doStdInAndParse() {
 		scanner := bufio.NewScanner(os.Stdin)
 		mod.ProjectList, _ = parse.GoList(scanner)
 		var purls = mod.ExtractPurlsFromManifest()
-		checkOSSIndex(purls, NewConsoleOutputter(config.NoColor, config.Quiet))
+		checkOSSIndex(purls, output.NewConsoleOutputter(config.NoColor, config.Quiet))
 	}
 }
 
@@ -104,43 +104,21 @@ func doCheckExistenceAndParse() {
 			audit.LogInvalidSemVerWarning(config.NoColor, config.Quiet, invalidPurls)
 		}
 
-		checkOSSIndex(purls, NewConsoleOutputter(config.NoColor, config.Quiet))
+		checkOSSIndex(purls, output.NewConsoleOutputter(config.NoColor, config.Quiet))
 	case strings.Contains(config.Path, "go.sum"):
 		mod := packages.Mod{}
 		mod.GoSumPath = config.Path
 		if mod.CheckExistenceOfManifest() {
 			mod.ProjectList, _ = parse.GoSum(config.Path)
 			var purls = mod.ExtractPurlsFromManifest()
-			checkOSSIndex(purls, NewConsoleOutputter(config.NoColor, config.Quiet))
+			checkOSSIndex(purls, output.NewConsoleOutputter(config.NoColor, config.Quiet))
 		}
 	default:
 		os.Exit(3)
 	}
 }
 
-type AuditOutputter interface {
-	LogResults(packageCount int, coordinates []types.Coordinate, exclusions []string)
-}
-
-type ConsoleOutputter struct {
-	NoColor bool
-	Quiet   bool
-}
-
-func NewConsoleOutputter(noColor, quiet bool) *ConsoleOutputter {
-	return &ConsoleOutputter{
-		NoColor: noColor,
-		Quiet:   quiet,
-	}
-}
-
-func (c *ConsoleOutputter) LogResults(packageCount int, coordinates []types.Coordinate, exclusions []string) {
-	if count := audit.LogResults(c.NoColor, c.Quiet, packageCount, coordinates, config.CveList.Cves); count > 0 {
-		os.Exit(count)
-	}
-}
-
-func checkOSSIndex(purls []string, outputter AuditOutputter) {
+func checkOSSIndex(purls []string, outputter output.AuditOutputter) {
 	coordinates, err := ossindex.AuditPackages(purls)
 	customerrors.Check(err, "Error auditing packages")
 

@@ -122,5 +122,7 @@ func checkOSSIndex(purls []string, outputter output.AuditOutputter) {
 	coordinates, err := ossindex.AuditPackages(purls)
 	customerrors.Check(err, "Error auditing packages")
 
-	outputter.LogResults(len(purls), coordinates, config.CveList.Cves)
+	if count := outputter.LogResults(len(purls), coordinates, config.CveList.Cves); count > 0 {
+		os.Exit(count)
+	}
 }

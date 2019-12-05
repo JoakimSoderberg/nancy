@@ -129,15 +129,30 @@ func (o *JUnitOutputter) LogResults(packageCount int, coordinates []types.Coordi
 			Failures: []JUnitFailure{},
 		}
 
+		packageIsVulnerable := false
+
 		for _, v := range c.Vulnerabilities {
 			if !v.Excluded {
 				testCase.Failures = append(testCase.Failures, JUnitFailure{
 					Type:    "ERROR",
 					Message: v.Title,
-					Text:    fmt.Sprintf("hello"),
+					Text: fmt.Sprintf("\n%s\n%s\n\nID:%s\nDetails:%s",
+						v.Title,
+						v.Description,
+						v.Id,
+						v.Reference),
 				})
+				packageIsVulnerable = true
 			}
 		}
+
+		// We only count which packages are vulnerable.
+		// Not how many, if more than one that packages has.
+		if packageIsVulnerable {
+			vulnerableCount++
+		}
+
+		testSuite.TestCases[i] = testCase
 
 		/*if coordinate.IsVulnerable() {
 			vulnerableCount++
@@ -154,6 +169,8 @@ func (o *JUnitOutputter) LogResults(packageCount int, coordinates []types.Coordi
 	report := JUnitReport{
 		Name:       o.Name,
 		TestSuites: []JUnitTestSuite{testSuite},
+		Tests:      len(testSuite.TestCases),
+		Failures:   vulnerableCount,
 	}
 
 	bytes, err := xml.MarshalIndent(report, "", "    ")

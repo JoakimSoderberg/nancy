@@ -18,6 +18,7 @@ package output
 import (
 	"encoding/xml"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"time"
 
@@ -53,14 +54,12 @@ func (o *ConsoleOutputter) LogResults(packageCount int, coordinates []types.Coor
 // JUnitOutputter is a type that implements the AuditOutputter and outputs a JUnit XML report
 type JUnitOutputter struct {
 	Path string
-	Name string
 }
 
 // NewJUnitOutputter creates a new JUnitOutputter
-func NewJUnitOutputter(name, path string) *JUnitOutputter {
+func NewJUnitOutputter(path string) *JUnitOutputter {
 	return &JUnitOutputter{
 		Path: path, // TODO: Change to io.Writer?
-		Name: name,
 	}
 }
 
@@ -108,6 +107,7 @@ type JUnitSkipMessage struct {
 	Message string `xml:"message,attr"`
 }
 
+// LogResults outputs a JUnit XML report with the vulnerability status of all go dependencies specified.
 func (o *JUnitOutputter) LogResults(packageCount int, coordinates []types.Coordinate, exclusions []string) int {
 	vulnerableCount := 0
 	testSuite := JUnitTestSuite{
@@ -159,7 +159,7 @@ func (o *JUnitOutputter) LogResults(packageCount int, coordinates []types.Coordi
 	}
 
 	report := JUnitReport{
-		Name:       o.Name,
+		Name:       "Go vulnerability dependency check report",
 		TestSuites: []JUnitTestSuite{testSuite},
 		Tests:      len(testSuite.TestCases),
 		Failures:   vulnerableCount,
@@ -170,7 +170,15 @@ func (o *JUnitOutputter) LogResults(packageCount int, coordinates []types.Coordi
 		return 1
 	}
 
-	os.Stdout.Write(bytes)
+	// TODO: Make this generic for all output types instead...
+	if o.Path != "" {
+		err := ioutil.WriteFile(o.Path, bytes, 0644)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, `Failed to write to path "%s": %s`, o.Path, err)
+		}
+	} else {
+		os.Stdout.Write(bytes)
+	}
 
 	return vulnerableCount
 }

@@ -54,10 +54,6 @@ func main() {
 		os.Exit(0)
 	}
 
-	if !config.Quiet {
-		fmt.Println("Nancy version: " + buildversion.BuildVersion)
-	}
-
 	if config.UseStdIn == true {
 		doStdInAndParse()
 	} else {
@@ -78,8 +74,7 @@ func doStdInAndParse() {
 		scanner := bufio.NewScanner(os.Stdin)
 		mod.ProjectList, _ = parse.GoList(scanner)
 		var purls = mod.ExtractPurlsFromManifest()
-		//checkOSSIndex(purls, output.NewConsoleOutputter(config.NoColor, config.Quiet))
-		checkOSSIndex(purls, output.NewJUnitOutputter("hello.xml", "hello"))
+		checkOSSIndex(purls, config.Outputter)
 	}
 }
 
@@ -105,14 +100,14 @@ func doCheckExistenceAndParse() {
 			audit.LogInvalidSemVerWarning(config.NoColor, config.Quiet, invalidPurls)
 		}
 
-		checkOSSIndex(purls, output.NewConsoleOutputter(config.NoColor, config.Quiet))
+		checkOSSIndex(purls, config.Outputter)
 	case strings.Contains(config.Path, "go.sum"):
 		mod := packages.Mod{}
 		mod.GoSumPath = config.Path
 		if mod.CheckExistenceOfManifest() {
 			mod.ProjectList, _ = parse.GoSum(config.Path)
 			var purls = mod.ExtractPurlsFromManifest()
-			checkOSSIndex(purls, output.NewConsoleOutputter(config.NoColor, config.Quiet))
+			checkOSSIndex(purls, config.Outputter)
 		}
 	default:
 		os.Exit(3)

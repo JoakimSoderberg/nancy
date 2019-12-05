@@ -4,24 +4,28 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"github.com/sonatype-nexus-community/nancy/types"
 	"os"
 	"strings"
+
+	"github.com/sonatype-nexus-community/nancy/output"
+	"github.com/sonatype-nexus-community/nancy/types"
 )
 
 type Configuration struct {
-	UseStdIn bool
-	Help bool
-	NoColor bool
-	Quiet bool
-	Version bool
-	CveList types.CveListFlag
-	Path    string
+	UseStdIn  bool
+	Help      bool
+	NoColor   bool
+	Quiet     bool
+	Version   bool
+	CveList   types.CveListFlag
+	Path      string
+	Outputter output.AuditOutputter
 }
 
 func Parse(args []string) (Configuration, error) {
 	config := Configuration{}
 	var excludeVulnerabilityFilePath string
+	var outputType string
 	var noColorDeprecated bool
 
 	flag.BoolVar(&config.Help, "help", false, "provides help text on how to use nancy")
@@ -31,6 +35,8 @@ func Parse(args []string) (Configuration, error) {
 	flag.BoolVar(&config.Version, "version", false, "prints current nancy version")
 	flag.Var(&config.CveList, "exclude-vulnerability", "Comma separated list of CVEs to exclude")
 	flag.StringVar(&excludeVulnerabilityFilePath, "exclude-vulnerability-file", "./.nancy-ignore", "Path to a file containing newline separated CVEs to be excluded")
+	flag.StringVar(&outputType, "output-type", "console", "The type of output to produce. One of: console, junit")
+	flag.StringVar(&config.Path, "output-path", "", "If specified the JUnit output will be written to this file instead of stdout")
 
 	flag.Usage = func() {
 		_, _ = fmt.Fprintf(os.Stderr, "Usage: \nnancy [options] </path/to/Gopkg.lock>\nnancy [options] </path/to/go.sum>\n\nOptions:\n")
@@ -46,7 +52,7 @@ func Parse(args []string) (Configuration, error) {
 
 	if len(flag.Args()) == 0 {
 		config.UseStdIn = true
-	}else{
+	} else {
 		config.Path = args[len(args)-1]
 	}
 
@@ -57,12 +63,29 @@ func Parse(args []string) (Configuration, error) {
 		config.NoColor = noColorDeprecated
 	}
 
+	err = getOutputterFromString(&config, outputType)
+	if err != nil {
+		return config, err
+	}
+
 	err = getCVEExcludesFromFile(&config, excludeVulnerabilityFilePath)
 	if err != nil {
 		return config, err
 	}
 
 	return config, nil
+}
+
+func getOutputterFromString(config *Configuration, outputType string) error {
+	switch outputType {
+	case "console":
+		config.Outputter = output.NewConsoleOutputter(config.NoColor, config.Quiet)
+	case "junit":
+		config.Outputter = output.NewJUnitOutputter(config.Path)
+	default:
+		return fmt.Errorf(`Unknown output type "%s"`, outputType)
+	}
+	return nil
 }
 
 func getCVEExcludesFromFile(config *Configuration, excludeVulnerabilityFilePath string) error {

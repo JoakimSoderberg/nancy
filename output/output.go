@@ -176,6 +176,7 @@ func (o *JUnitOutputter) LogResults(packageCount int, coordinates []types.Coordi
 		if err != nil {
 			fmt.Fprintf(os.Stderr, `Failed to write to path "%s": %s`, o.Path, err)
 		}
+		fmt.Printf(`Wrote JUnit XML file to "%s"\n`, o.Path)
 	} else {
 		os.Stdout.Write(bytes)
 	}

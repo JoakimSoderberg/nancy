@@ -78,13 +78,13 @@ func LogResults(noColor bool, quiet bool, packageCount int, coordinates []types.
 		coordinate := coordinates[i]
 		idx := i + 1
 
-		if !coordinate.IsVulnerable() {
+		if coordinate.IsVulnerable() {
+			logVulnerablePackage(noColor, idx, packageCount, coordinate)
+			vulnerableCount++
+		} else {
 			if !quiet {
 				logPackage(noColor, idx, packageCount, coordinate)
 			}
-		} else {
-			logVulnerablePackage(noColor, idx, packageCount, coordinate)
-			vulnerableCount++
 		}
 	}
 

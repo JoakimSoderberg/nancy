@@ -78,7 +78,8 @@ func doStdInAndParse() {
 		scanner := bufio.NewScanner(os.Stdin)
 		mod.ProjectList, _ = parse.GoList(scanner)
 		var purls = mod.ExtractPurlsFromManifest()
-		checkOSSIndex(purls, output.NewConsoleOutputter(config.NoColor, config.Quiet))
+		//checkOSSIndex(purls, output.NewConsoleOutputter(config.NoColor, config.Quiet))
+		checkOSSIndex(purls, output.NewJUnitOutputter("hello.xml", "hello"))
 	}
 }
 
@@ -119,6 +120,7 @@ func doCheckExistenceAndParse() {
 }
 
 func checkOSSIndex(purls []string, outputter output.AuditOutputter) {
+	// TODO: Change so that we return a struct with more goodies
 	coordinates, err := ossindex.AuditPackages(purls)
 	customerrors.Check(err, "Error auditing packages")
 

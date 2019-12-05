@@ -19,6 +19,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/sonatype-nexus-community/nancy/audit"
 	"github.com/sonatype-nexus-community/nancy/types"
@@ -63,7 +64,7 @@ func NewJUnitOutputter(name, path string) *JUnitOutputter {
 	}
 }
 
-// JUnitReport
+// JUnitReport is a JUnit test suites report.
 type JUnitReport struct {
 	XMLName    xml.Name         `xml:"testsuites"`
 	Text       string           `xml:",chardata"`
@@ -85,6 +86,7 @@ type JUnitTestSuite struct {
 	TestCases []JUnitTestCase `xml:"testcase"`
 }
 
+// JUnitTestCase is a JUnit test case description.
 type JUnitTestCase struct {
 	Text        string            `xml:",chardata"`
 	ID          string            `xml:"id,attr"`
@@ -94,12 +96,14 @@ type JUnitTestCase struct {
 	SkipMessage *JUnitSkipMessage `xml:"skipped,omitempty"`
 }
 
+// JUnitFailure is a JUnit test case failure description.
 type JUnitFailure struct {
 	Text    string `xml:",chardata"`
 	Message string `xml:"message,attr"`
 	Type    string `xml:"type,attr"`
 }
 
+// JUnitSkipMessage is a JUnit skip message.
 type JUnitSkipMessage struct {
 	Message string `xml:"message,attr"`
 }
@@ -120,13 +124,12 @@ func (o *JUnitOutputter) LogResults(packageCount int, coordinates []types.Coordi
 
 	for i := 0; i < len(coordinates); i++ {
 		c := coordinates[i]
-		//idx := i + 1
 
-		// TODO: Are these correct?
 		testCase := JUnitTestCase{
 			Name:     c.Coordinates,
 			Text:     c.Reference,
 			Failures: []JUnitFailure{},
+			Time:     time.Now().Format(time.RFC3339),
 		}
 
 		packageIsVulnerable := false
@@ -153,18 +156,7 @@ func (o *JUnitOutputter) LogResults(packageCount int, coordinates []types.Coordi
 		}
 
 		testSuite.TestCases[i] = testCase
-
-		/*if coordinate.IsVulnerable() {
-			vulnerableCount++
-		} else {
-			//logVulnerablePackage(noColor, idx, packageCount, coordinate)
-		}*/
 	}
-
-	/*fmt.Println()
-	au := aurora.NewAurora(!noColor)
-	fmt.Println("Audited dependencies:", strconv.Itoa(packageCount)+",",
-		"Vulnerable:", au.Bold(au.Red(strconv.Itoa(vulnerableCount))))*/
 
 	report := JUnitReport{
 		Name:       o.Name,

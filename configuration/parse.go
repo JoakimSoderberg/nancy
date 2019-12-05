@@ -12,14 +12,15 @@ import (
 )
 
 type Configuration struct {
-	UseStdIn  bool
-	Help      bool
-	NoColor   bool
-	Quiet     bool
-	Version   bool
-	CveList   types.CveListFlag
-	Path      string
-	Outputter output.AuditOutputter
+	UseStdIn   bool
+	Help       bool
+	NoColor    bool
+	Quiet      bool
+	Version    bool
+	CveList    types.CveListFlag
+	Path       string
+	OutputPath string
+	Outputter  output.AuditOutputter
 }
 
 func Parse(args []string) (Configuration, error) {
@@ -36,7 +37,7 @@ func Parse(args []string) (Configuration, error) {
 	flag.Var(&config.CveList, "exclude-vulnerability", "Comma separated list of CVEs to exclude")
 	flag.StringVar(&excludeVulnerabilityFilePath, "exclude-vulnerability-file", "./.nancy-ignore", "Path to a file containing newline separated CVEs to be excluded")
 	flag.StringVar(&outputType, "output-type", "console", "The type of output to produce. One of: console, junit")
-	flag.StringVar(&config.Path, "output-path", "", "If specified the JUnit output will be written to this file instead of stdout")
+	flag.StringVar(&config.OutputPath, "output-path", "", "If specified the JUnit output will be written to this file instead of stdout")
 
 	flag.Usage = func() {
 		_, _ = fmt.Fprintf(os.Stderr, "Usage: \nnancy [options] </path/to/Gopkg.lock>\nnancy [options] </path/to/go.sum>\n\nOptions:\n")
@@ -81,7 +82,7 @@ func getOutputterFromString(config *Configuration, outputType string) error {
 	case "console":
 		config.Outputter = output.NewConsoleOutputter(config.NoColor, config.Quiet)
 	case "junit":
-		config.Outputter = output.NewJUnitOutputter(config.Path)
+		config.Outputter = output.NewJUnitOutputter(config.OutputPath)
 	default:
 		return fmt.Errorf(`Unknown output type "%s"`, outputType)
 	}
